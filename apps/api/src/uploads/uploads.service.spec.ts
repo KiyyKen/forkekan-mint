@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { UploadStatus } from '@prisma/client';
+import path from 'node:path';
 
 import { MetadataQueueService } from './metadata-queue.service';
 import { UploadsRepository, UploadWithMediaFile } from './uploads.repository';
@@ -30,13 +31,17 @@ describe('UploadsService', () => {
     userAgent: 'jest',
   };
 
+  // Path dibangun dengan path.join agar test portabel: separator mengikuti
+  // OS test runner, sama seperti destination yang diberikan Multer saat runtime.
+  const uploadDir = path.join('storage', 'uploads');
+
   const file = {
     originalname: 'video asli.mp4',
     filename: 'abc123.mp4',
     mimetype: 'video/mp4',
     size: 1024,
-    destination: 'C:\\storage\\uploads',
-    path: 'C:\\storage\\uploads\\abc123.mp4',
+    destination: uploadDir,
+    path: path.join(uploadDir, 'abc123.mp4'),
   } as Express.Multer.File;
 
   const storedUpload: UploadWithMediaFile = {
