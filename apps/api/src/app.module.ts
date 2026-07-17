@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './database/prisma.module';
 import { HealthModule } from './health/health.module';
+import { UsersModule } from './users/users.module';
 
-// Feature modules (auth, users, uploads, videos, processing, presets,
-// downloads, history, admin) akan didaftarkan mulai fase Authentication.
+// Feature modules lain (uploads, videos, processing, presets,
+// downloads, history, admin) akan didaftarkan pada fase berikutnya.
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -14,6 +16,8 @@ import { HealthModule } from './health/health.module';
     }),
     PrismaModule,
     HealthModule,
+    UsersModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
