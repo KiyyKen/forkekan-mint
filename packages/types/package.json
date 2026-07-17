@@ -1,0 +1,21 @@
+{
+  "name": "@forkekan/types",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared TypeScript types untuk Forkekan-mint",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@forkekan/eslint-config": "workspace:*",
+    "@forkekan/tsconfig": "workspace:*",
+    "eslint": "^9.28.0",
+    "typescript": "^5.8.3"
+  }
+}

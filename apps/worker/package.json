@@ -1,0 +1,29 @@
+{
+  "name": "@forkekan/worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Forkekan-mint Worker — BullMQ + Redis + FFmpeg",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"@forkekan/worker: no tests yet\""
+  },
+  "dependencies": {
+    "@forkekan/shared": "workspace:*",
+    "@forkekan/types": "workspace:*",
+    "bullmq": "^5.52.0",
+    "dotenv": "^16.5.0",
+    "ioredis": "^5.6.1"
+  },
+  "devDependencies": {
+    "@forkekan/eslint-config": "workspace:*",
+    "@forkekan/tsconfig": "workspace:*",
+    "@types/node": "^22.15.0",
+    "eslint": "^9.28.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

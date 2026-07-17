@@ -1,0 +1,290 @@
+// Forkekan-mint — Prisma Schema
+//
+// Acuan: docs/08-database-schema.md & docs/04-erd.md
+// Perubahan struktur database WAJIB melalui Prisma Migration.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --------------------------------------------
+// Enums
+// --------------------------------------------
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UploadStatus {
+  UPLOADING
+  UPLOADED
+  FAILED
+}
+
+enum JobStatus {
+  WAITING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum LogLevel {
+  INFO
+  WARNING
+  ERROR
+}
+
+// --------------------------------------------
+// Models
+// --------------------------------------------
+
+/// Akun pengguna (login via Google OAuth).
+model User {
+  id String @id @default(cuid())
+
+  name  String
+  email String @unique
+
+  avatarUrl String?
+
+  provider   String
+  providerId String @unique
+
+  role UserRole @default(USER)
+
+  uploads   Upload[]
+  downloads Download[]
+  favorites FavoritePreset[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Aktivitas upload. Satu upload memiliki satu media file.
+model Upload {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status UploadStatus
+
+  ipAddress String?
+
+  userAgent String?
+
+  mediaFile MediaFile?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+/// Metadata video. Tidak menyimpan file fisik.
+model MediaFile {
+  id String @id @default(cuid())
+
+  uploadId String @unique
+  upload   Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  originalFilename String
+
+  storedFilename String
+
+  mimeType String
+
+  fileSize BigInt
+
+  width Int
+
+  height Int
+
+  duration Float
+
+  fps Float
+
+  bitrate Int
+
+  codec String
+
+  audioCodec String
+
+  audioBitrate Int
+
+  thumbnailPath String?
+
+  storageObject StorageObject?
+
+  processingJobs ProcessingJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Lokasi file fisik pada storage (Cloudflare R2 / local).
+model StorageObject {
+  id String @id @default(cuid())
+
+  mediaFileId String    @unique
+  mediaFile   MediaFile @relation(fields: [mediaFileId], references: [id], onDelete: Cascade)
+
+  disk String
+
+  bucket String
+
+  objectKey String
+
+  checksum String?
+
+  visibility String
+
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Preset optimasi per platform (WhatsApp, Instagram, TikTok, dll).
+model PlatformPreset {
+  id String @id @default(cuid())
+
+  name String
+
+  slug String @unique
+
+  description String?
+
+  targetResolution String
+
+  targetCodec String
+
+  targetFps Float
+
+  targetBitrate Int
+
+  targetAudioCodec String
+
+  targetAudioBitrate Int
+
+  processingJobs ProcessingJob[]
+
+  favorites FavoritePreset[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Pekerjaan encoding pada queue.
+model ProcessingJob {
+  id String @id @default(cuid())
+
+  mediaFileId String
+  mediaFile   MediaFile @relation(fields: [mediaFileId], references: [id], onDelete: Cascade)
+
+  presetId String
+  preset   PlatformPreset @relation(fields: [presetId], references: [id])
+
+  queueName String
+
+  workerName String?
+
+  status JobStatus
+
+  progress Int
+
+  startedAt DateTime?
+
+  finishedAt DateTime?
+
+  failedReason String?
+
+  result ProcessingResult?
+
+  logs ProcessingLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([mediaFileId])
+  @@index([presetId])
+}
+
+/// Hasil akhir encoding. Satu job menghasilkan satu hasil.
+model ProcessingResult {
+  id String @id @default(cuid())
+
+  processingJobId String        @unique
+  processingJob   ProcessingJob @relation(fields: [processingJobId], references: [id], onDelete: Cascade)
+
+  outputFilename String
+
+  outputSize BigInt
+
+  outputResolution String
+
+  outputCodec String
+
+  outputBitrate Int
+
+  processingTime Int
+
+  previewThumbnail String?
+
+  downloads Download[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Log aktivitas worker selama encoding.
+model ProcessingLog {
+  id String @id @default(cuid())
+
+  processingJobId String
+  processingJob   ProcessingJob @relation(fields: [processingJobId], references: [id], onDelete: Cascade)
+
+  level LogLevel
+
+  message String
+
+  createdAt DateTime @default(now())
+}
+
+/// Riwayat download hasil optimasi.
+model Download {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  processingResultId String
+  processingResult   ProcessingResult @relation(fields: [processingResultId], references: [id], onDelete: Cascade)
+
+  downloadedAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Preset favorit milik pengguna.
+model FavoritePreset {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  presetId String
+  preset   PlatformPreset @relation(fields: [presetId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, presetId])
+  @@index([userId])
+}

@@ -1,0 +1,43 @@
+{
+  "name": "@forkekan/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Forkekan-mint Frontend — React + Vite",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@forkekan/shared": "workspace:*",
+    "@forkekan/types": "workspace:*",
+    "@forkekan/ui": "workspace:*",
+    "@tanstack/react-query": "^5.80.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.15.0",
+    "lucide-react": "^0.511.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.0",
+    "tailwind-merge": "^3.3.0"
+  },
+  "devDependencies": {
+    "@forkekan/eslint-config": "workspace:*",
+    "@forkekan/tsconfig": "workspace:*",
+    "@tailwindcss/vite": "^4.1.8",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.5.0",
+    "eslint": "^9.28.0",
+    "tailwindcss": "^4.1.8",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.0"
+  }
+}

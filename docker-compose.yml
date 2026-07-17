@@ -1,0 +1,48 @@
+##
+## Forkekan-mint — Development Infrastructure
+## Menjalankan PostgreSQL dan Redis untuk development lokal.
+##
+##   docker compose up -d
+##
+## Full-stack compose (web + api + worker + nginx) ada di
+## infra/compose/docker-compose.dev.yml
+##
+
+name: forkekan-mint
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: forkekan-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: forkekan
+      POSTGRES_PASSWORD: forkekan
+      POSTGRES_DB: forkekan_mint
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forkekan -d forkekan_mint"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: forkekan-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
