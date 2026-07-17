@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { APP_NAME } from '@forkekan/shared';
 
 import { Button } from '@/components/ui/button';
@@ -31,8 +33,12 @@ export function DashboardPage() {
           {isLoading ? 'Memuat...' : `Halo, ${user?.name ?? 'Pengguna'}`}
         </h1>
         <p className="text-pretty mt-2 text-sm text-muted-foreground">
-          Fitur upload dan optimasi video akan tersedia pada fase berikutnya.
+          Unggah video untuk mulai optimasi. Riwayat dan preset favorit menyusul pada fase
+          berikutnya.
         </p>
+        <Link to="/upload" className="mt-6 inline-block">
+          <Button>Upload video</Button>
+        </Link>
       </main>
     </div>
   );

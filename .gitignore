@@ -35,3 +35,6 @@ Thumbs.db
 
 # Prisma
 apps/api/prisma/migrations/dev/
+
+# Uploaded files (local storage dev)
+storage/
