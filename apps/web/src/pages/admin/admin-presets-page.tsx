@@ -13,7 +13,8 @@ export function AdminPresetsPage() {
     <>
       <h1 className="text-balance text-2xl font-bold">Preset platform</h1>
       <p className="text-pretty mt-2 text-sm text-muted-foreground">
-        Preset optimasi yang tersedia untuk pengguna. Perubahan dilakukan melalui seed database.
+        Daftar preset yang tersedia untuk pengguna. Preset ini dikelola langsung dari database,
+        bukan dari halaman ini.
       </p>
 
       <div className="mt-8">
@@ -27,7 +28,7 @@ export function AdminPresetsPage() {
 
         {presets.isError && (
           <div role="alert" className="rounded-xl border border-border bg-card p-6">
-            <p className="font-medium">Daftar preset tidak dapat dimuat</p>
+            <p className="font-medium">Daftar preset tidak bisa dimuat</p>
             <Button variant="outline" size="sm" className="mt-3" onClick={() => presets.refetch()}>
               Coba lagi
             </Button>

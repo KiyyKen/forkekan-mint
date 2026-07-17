@@ -42,16 +42,16 @@ export function AdminJobsPage() {
 
   return (
     <>
-      <h1 className="text-balance text-2xl font-bold">Queue processing</h1>
+      <h1 className="text-balance text-2xl font-bold">Antrean pemrosesan</h1>
       <p className="text-pretty mt-2 text-sm text-muted-foreground">
-        Seluruh job optimasi lintas pengguna. Diperbarui otomatis setiap 5 detik.
+        Seluruh proses optimasi dari semua pengguna, diperbarui otomatis setiap 5 detik.
       </p>
 
       <form onSubmit={handleSearch} className="mt-8 flex flex-wrap items-center gap-3">
         <input
           type="search"
-          aria-label="Cari job"
-          placeholder="Cari preset, nama file, atau id job..."
+          aria-label="Cari proses"
+          placeholder="Cari preset, nama file, atau ID proses..."
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
           className={`${INPUT_CLASS} w-full sm:w-64`}
@@ -84,7 +84,7 @@ export function AdminJobsPage() {
 
       <div className="mt-6">
         {jobs.isPending && (
-          <div role="status" aria-label="Memuat job" className="space-y-3">
+          <div role="status" aria-label="Memuat antrean" className="space-y-3">
             {[0, 1, 2].map((index) => (
               <div key={index} className="h-14 animate-pulse rounded-xl bg-muted" />
             ))}
@@ -93,7 +93,7 @@ export function AdminJobsPage() {
 
         {jobs.isError && (
           <div role="alert" className="rounded-xl border border-border bg-card p-6">
-            <p className="font-medium">Daftar job tidak dapat dimuat</p>
+            <p className="font-medium">Antrean tidak bisa dimuat</p>
             <Button variant="outline" size="sm" className="mt-3" onClick={() => jobs.refetch()}>
               Coba lagi
             </Button>
@@ -102,9 +102,9 @@ export function AdminJobsPage() {
 
         {jobs.isSuccess && items.length === 0 && (
           <div role="status" className="rounded-xl border border-border bg-card p-12 text-center">
-            <p className="font-medium">Tidak ada job yang cocok.</p>
+            <p className="font-medium">Tidak ada proses yang cocok.</p>
             <p className="text-pretty mt-1 text-sm text-muted-foreground">
-              Ubah kata kunci atau filter untuk melihat job lain.
+              Ubah kata kunci atau filter untuk melihat proses lain.
             </p>
           </div>
         )}
@@ -115,7 +115,7 @@ export function AdminJobsPage() {
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
                   <th scope="col" className="px-6 py-3 font-medium">
-                    Job
+                    Preset
                   </th>
                   <th scope="col" className="px-6 py-3 font-medium">
                     Status
@@ -148,7 +148,7 @@ export function AdminJobsPage() {
                       <div className="flex items-center gap-2">
                         <Progress
                           value={job.progress}
-                          label={`Progress job ${job.preset}`}
+                          label={`Progress ${job.preset}`}
                           className="w-24"
                         />
                         <span className="tabular-nums text-muted-foreground">{job.progress}%</span>

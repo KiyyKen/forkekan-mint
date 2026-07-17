@@ -21,7 +21,7 @@ export function ConfirmDeleteDialog({
     <Dialog open={open} onClose={onCancel} title="Hapus riwayat?" role="alertdialog">
       <p className="text-pretty text-sm text-muted-foreground">
         Riwayat optimasi{presetName ? ` "${presetName}"` : ''} beserta file hasilnya akan dihapus
-        permanen. Tindakan ini tidak dapat dibatalkan.
+        permanen. Tindakan ini tidak bisa dibatalkan.
       </p>
       <div className="mt-6 flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={onCancel} disabled={isDeleting}>

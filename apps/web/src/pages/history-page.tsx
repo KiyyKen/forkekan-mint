@@ -128,7 +128,7 @@ export function HistoryPage() {
 
           {history.isError && (
             <div role="alert" className="rounded-xl border border-border bg-card p-6">
-              <p className="font-medium">Riwayat tidak dapat dimuat</p>
+              <p className="font-medium">Riwayat tidak bisa dimuat</p>
               <Button variant="outline" size="sm" className="mt-3" onClick={() => history.refetch()}>
                 Coba lagi
               </Button>

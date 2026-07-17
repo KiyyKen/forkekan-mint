@@ -3,7 +3,11 @@ import { UploadCloud } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
-import { MAX_UPLOAD_SIZE_MB, VIDEO_FILE_ACCEPT } from '@/utils/validate-video-file';
+import {
+  ALLOWED_VIDEO_EXTENSIONS,
+  MAX_UPLOAD_SIZE_MB,
+  VIDEO_FILE_ACCEPT,
+} from '@/utils/validate-video-file';
 
 interface UploadDropzoneProps {
   onFileSelected: (file: File) => void;
@@ -38,20 +42,43 @@ export function UploadDropzone({ onFileSelected }: UploadDropzoneProps) {
       onDragOver={handleDragOver}
       onDragLeave={() => setIsDragActive(false)}
       className={cn(
-        'flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border bg-card px-6 py-16 text-center',
-        isDragActive && 'border-primary bg-accent',
+        'flex flex-col items-center justify-center gap-5 rounded-xl border-2 border-dashed border-border bg-card px-6 py-20 text-center transition-colors',
+        isDragActive && 'border-primary bg-primary/5',
       )}
     >
-      <UploadCloud aria-hidden="true" className="size-10 text-muted-foreground" />
+      <span
+        className={cn(
+          'flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform',
+          isDragActive && 'scale-110',
+        )}
+      >
+        <UploadCloud aria-hidden="true" className="size-6" />
+      </span>
 
       <div>
-        <p className="text-pretty font-medium">Tarik dan letakkan video di sini</p>
+        <p className="text-pretty text-lg font-semibold">Tarik dan letakkan video di sini</p>
         <p className="text-pretty mt-1 text-sm text-muted-foreground">
-          MP4, MOV, AVI, MKV, atau WEBM — maksimal {MAX_UPLOAD_SIZE_MB} MB.
+          atau klik tombol di bawah untuk memilih dari perangkat Anda
         </p>
       </div>
 
-      <Button onClick={() => inputRef.current?.click()}>Pilih video</Button>
+      <Button size="lg" onClick={() => inputRef.current?.click()}>
+        Pilih video
+      </Button>
+
+      <div className="flex flex-col items-center gap-2">
+        <ul className="flex flex-wrap items-center justify-center gap-1.5">
+          {ALLOWED_VIDEO_EXTENSIONS.map((extension) => (
+            <li
+              key={extension}
+              className="rounded-md border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground uppercase"
+            >
+              {extension.replace('.', '')}
+            </li>
+          ))}
+        </ul>
+        <p className="text-xs text-muted-foreground">Maksimal {MAX_UPLOAD_SIZE_MB} MB per video</p>
+      </div>
 
       <input
         ref={inputRef}

@@ -16,7 +16,7 @@ export function AdminDashboardPage() {
 
       {dashboard.isError ? (
         <div role="alert" className="mt-8 rounded-xl border border-border bg-card p-6">
-          <p className="font-medium">Statistik tidak dapat dimuat</p>
+          <p className="font-medium">Statistik tidak bisa dimuat</p>
           <Button variant="outline" size="sm" className="mt-3" onClick={() => dashboard.refetch()}>
             Coba lagi
           </Button>
@@ -34,7 +34,7 @@ export function AdminDashboardPage() {
             isLoading={dashboard.isPending}
           />
           <StatCard
-            label="Total job"
+            label="Total proses"
             value={dashboard.data?.totalJobs ?? null}
             isLoading={dashboard.isPending}
           />
@@ -50,7 +50,7 @@ export function AdminDashboardPage() {
         <h2 className="font-semibold">Storage</h2>
         {storage.isError ? (
           <div role="alert" className="mt-4 rounded-xl border border-border bg-card p-6">
-            <p className="font-medium">Data storage tidak dapat dimuat</p>
+            <p className="font-medium">Data storage tidak bisa dimuat</p>
             <Button variant="outline" size="sm" className="mt-3" onClick={() => storage.refetch()}>
               Coba lagi
             </Button>
@@ -66,7 +66,7 @@ export function AdminDashboardPage() {
             <StatCard
               label="Tersedia"
               value={storage.data?.available ?? null}
-              hint="Sisa kapasitas disk pada server storage."
+              hint="Sisa kapasitas penyimpanan yang tersedia."
               isLoading={storage.isPending}
             />
           </div>

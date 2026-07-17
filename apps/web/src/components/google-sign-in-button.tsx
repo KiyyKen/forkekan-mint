@@ -1,3 +1,4 @@
+import { Settings } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const GSI_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
@@ -17,7 +18,7 @@ function loadGsiScript(): Promise<void> {
     const existing = document.querySelector<HTMLScriptElement>(`script[src="${GSI_SCRIPT_URL}"]`);
     if (existing) {
       existing.addEventListener('load', () => resolve());
-      existing.addEventListener('error', () => reject(new Error('Gagal memuat script Google')));
+      existing.addEventListener('error', () => reject(new Error('Google Sign-In tidak bisa dimuat. Periksa koneksi internet Anda dan coba lagi.')));
       return;
     }
 
@@ -25,7 +26,7 @@ function loadGsiScript(): Promise<void> {
     script.src = GSI_SCRIPT_URL;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Gagal memuat script Google'));
+    script.onerror = () => reject(new Error('Google Sign-In tidak bisa dimuat. Periksa koneksi internet Anda dan coba lagi.'));
     document.head.appendChild(script);
   });
 }
@@ -36,11 +37,11 @@ function loadGsiScript(): Promise<void> {
  */
 export function GoogleSignInButton({ onCredential }: GoogleSignInButtonProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const isConfigMissing = !GOOGLE_CLIENT_ID;
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) {
-      setError('Google Client ID belum dikonfigurasi. Isi VITE_GOOGLE_CLIENT_ID pada file .env.');
+    if (isConfigMissing) {
       return;
     }
 
@@ -64,21 +65,39 @@ export function GoogleSignInButton({ onCredential }: GoogleSignInButtonProps) {
           text: 'signin_with',
         });
       })
-      .catch((loadError: Error) => {
+      .catch((error: Error) => {
         if (!cancelled) {
-          setError(loadError.message);
+          setLoadError(error.message);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [onCredential]);
+  }, [onCredential, isConfigMissing]);
 
-  if (error) {
+  // Konfigurasi hilang adalah masalah developer, bukan kegagalan yang dialami
+  // pengguna — tampilkan sebagai notice kecil, bukan error yang mendominasi UI.
+  if (isConfigMissing) {
+    return (
+      <div
+        role="status"
+        className="flex w-full max-w-70 items-start gap-2 rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2.5 text-left text-xs text-muted-foreground"
+      >
+        <Settings aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+        <span>
+          Login Google belum dikonfigurasi. Developer: isi{' '}
+          <code className="rounded bg-muted px-1 py-0.5 font-mono">VITE_GOOGLE_CLIENT_ID</code>{' '}
+          pada file .env.
+        </span>
+      </div>
+    );
+  }
+
+  if (loadError) {
     return (
       <p role="alert" className="text-pretty text-sm text-destructive">
-        {error}
+        {loadError}
       </p>
     );
   }

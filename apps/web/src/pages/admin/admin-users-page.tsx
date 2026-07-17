@@ -66,7 +66,7 @@ export function AdminUsersPage() {
 
         {users.isError && (
           <div role="alert" className="rounded-xl border border-border bg-card p-6">
-            <p className="font-medium">Daftar pengguna tidak dapat dimuat</p>
+            <p className="font-medium">Daftar pengguna tidak bisa dimuat</p>
             <Button variant="outline" size="sm" className="mt-3" onClick={() => users.refetch()}>
               Coba lagi
             </Button>
@@ -108,7 +108,7 @@ export function AdminUsersPage() {
                     <td className="px-6 py-3 text-muted-foreground">{user.email}</td>
                     <td className="px-6 py-3">
                       <span className="inline-flex rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-                        {user.role === 'ADMIN' ? 'Admin' : 'User'}
+                        {user.role === 'ADMIN' ? 'Admin' : 'Pengguna'}
                       </span>
                     </td>
                     <td className="px-6 py-3 tabular-nums text-muted-foreground">

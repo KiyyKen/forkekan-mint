@@ -15,6 +15,8 @@ interface UploadState {
   progress: number;
   result: UploadResult | null;
   errorMessage: string | null;
+  /** File yang dipilih user — hanya untuk tampilan (nama/ukuran) & retry, bukan dikirim ulang ke server. */
+  file: File | null;
 }
 
 const IDLE_STATE: UploadState = {
@@ -22,6 +24,7 @@ const IDLE_STATE: UploadState = {
   progress: 0,
   result: null,
   errorMessage: null,
+  file: null,
 };
 
 /**
@@ -31,17 +34,15 @@ const IDLE_STATE: UploadState = {
 export function useUpload() {
   const [state, setState] = useState<UploadState>(IDLE_STATE);
   const handleRef = useRef<UploadHandle | null>(null);
-  const lastFileRef = useRef<File | null>(null);
 
   const start = useCallback((file: File) => {
     const validation = validateVideoFile(file);
     if (!validation.valid) {
-      setState({ status: 'error', progress: 0, result: null, errorMessage: validation.reason });
+      setState({ status: 'error', progress: 0, result: null, errorMessage: validation.reason, file });
       return;
     }
 
-    lastFileRef.current = file;
-    setState({ status: 'uploading', progress: 0, result: null, errorMessage: null });
+    setState({ status: 'uploading', progress: 0, result: null, errorMessage: null, file });
 
     const handle = uploadVideo(file, (percent) => {
       setState((previous) => ({ ...previous, progress: percent }));
@@ -50,14 +51,26 @@ export function useUpload() {
 
     handle.promise
       .then((result) => {
-        setState({ status: 'success', progress: 100, result, errorMessage: null });
+        setState((previous) => ({
+          ...previous,
+          status: 'success',
+          progress: 100,
+          result,
+          errorMessage: null,
+        }));
       })
       .catch((error: Error) => {
         if (error instanceof UploadCancelledError) {
           setState(IDLE_STATE);
           return;
         }
-        setState({ status: 'error', progress: 0, result: null, errorMessage: error.message });
+        setState((previous) => ({
+          ...previous,
+          status: 'error',
+          progress: 0,
+          result: null,
+          errorMessage: error.message,
+        }));
       })
       .finally(() => {
         handleRef.current = null;
@@ -69,14 +82,13 @@ export function useUpload() {
   }, []);
 
   const retry = useCallback(() => {
-    if (lastFileRef.current) {
-      start(lastFileRef.current);
+    if (state.file) {
+      start(state.file);
     }
-  }, [start]);
+  }, [state.file, start]);
 
   const reset = useCallback(() => {
     handleRef.current?.abort();
-    lastFileRef.current = null;
     setState(IDLE_STATE);
   }, []);
 
