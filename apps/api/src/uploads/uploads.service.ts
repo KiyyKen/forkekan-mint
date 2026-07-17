@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { unlink } from 'node:fs/promises';
 import path from 'node:path';
 
+import { MetadataQueueService } from './metadata-queue.service';
 import { UploadsRepository, UploadWithMediaFile } from './uploads.repository';
 
 export interface UploadRequestContext {
@@ -26,7 +27,10 @@ export interface UploadDetailResult {
 export class UploadsService {
   private readonly logger = new Logger(UploadsService.name);
 
-  constructor(private readonly uploadsRepository: UploadsRepository) {}
+  constructor(
+    private readonly uploadsRepository: UploadsRepository,
+    private readonly metadataQueueService: MetadataQueueService,
+  ) {}
 
   /**
    * Mencatat file yang sudah tersimpan di disk (via Multer) ke database.
@@ -52,6 +56,13 @@ export class UploadsService {
         bucket: path.basename(file.destination),
         objectKey: file.filename,
       });
+
+      if (upload.mediaFile) {
+        await this.metadataQueueService.enqueueExtractMetadata({
+          mediaFileId: upload.mediaFile.id,
+          filePath: file.path,
+        });
+      }
 
       return {
         uploadId: upload.id,

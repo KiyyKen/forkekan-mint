@@ -7,6 +7,7 @@ import path from 'node:path';
 import { diskStorage } from 'multer';
 
 import { AuthModule } from '../auth/auth.module';
+import { MetadataQueueService } from './metadata-queue.service';
 import { UploadsController } from './uploads.controller';
 import { UploadsRepository } from './uploads.repository';
 import { UploadsService } from './uploads.service';
@@ -60,6 +61,6 @@ function isAllowedVideo(originalname: string, mimetype: string): boolean {
     }),
   ],
   controllers: [UploadsController],
-  providers: [UploadsService, UploadsRepository],
+  providers: [UploadsService, UploadsRepository, MetadataQueueService],
 })
 export class UploadsModule {}

@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { UploadStatus } from '@prisma/client';
 
+import { MetadataQueueService } from './metadata-queue.service';
 import { UploadsRepository, UploadWithMediaFile } from './uploads.repository';
 import { UploadsService, UploadRequestContext } from './uploads.service';
 
@@ -17,6 +18,10 @@ describe('UploadsService', () => {
   const uploadsRepository = {
     createUploadedVideo: jest.fn(),
     findById: jest.fn(),
+  };
+
+  const metadataQueueService = {
+    enqueueExtractMetadata: jest.fn().mockResolvedValue(undefined),
   };
 
   const context: UploadRequestContext = {
@@ -49,7 +54,11 @@ describe('UploadsService', () => {
     jest.clearAllMocks();
 
     const moduleRef = await Test.createTestingModule({
-      providers: [UploadsService, { provide: UploadsRepository, useValue: uploadsRepository }],
+      providers: [
+        UploadsService,
+        { provide: UploadsRepository, useValue: uploadsRepository },
+        { provide: MetadataQueueService, useValue: metadataQueueService },
+      ],
     }).compile();
 
     uploadsService = moduleRef.get(UploadsService);
@@ -74,6 +83,17 @@ describe('UploadsService', () => {
         fileSize: BigInt(1024),
         bucket: 'uploads',
         objectKey: 'abc123.mp4',
+      });
+    });
+
+    it('mengantrekan job ekstraksi metadata setelah upload tersimpan', async () => {
+      uploadsRepository.createUploadedVideo.mockResolvedValue(storedUpload);
+
+      await uploadsService.createUpload(file, context);
+
+      expect(metadataQueueService.enqueueExtractMetadata).toHaveBeenCalledWith({
+        mediaFileId: 'media-1',
+        filePath: file.path,
       });
     });
 

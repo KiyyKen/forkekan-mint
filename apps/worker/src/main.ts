@@ -2,7 +2,10 @@ import { Worker, type Job } from 'bullmq';
 import { config as loadEnv } from 'dotenv';
 import IORedis from 'ioredis';
 
+import { EXTRACT_METADATA_JOB } from './jobs/job-names';
 import { VIDEO_PROCESSING_QUEUE } from './jobs/queue-names';
+import { extractMetadataProcessor } from './processors/extract-metadata.processor';
+import { prisma } from './services/prisma';
 
 loadEnv({ path: ['.env', '../../.env'] });
 
@@ -29,12 +32,17 @@ connection.on('ready', () => {
   console.log(`[worker] Terhubung ke Redis: ${redisUrl}`);
 });
 
-// Processor video (FFmpeg, thumbnail, metadata) akan diimplementasikan
-// pada Phase 4 — Processing Pipeline.
+// Encoding FFmpeg dan thumbnail menyusul pada fase Processing Pipeline.
 const worker = new Worker(
   VIDEO_PROCESSING_QUEUE,
   async (job: Job) => {
-    console.log(`[worker] Menerima job ${job.id} (${job.name}) — belum ada processor (Phase 4).`);
+    switch (job.name) {
+      case EXTRACT_METADATA_JOB:
+        await extractMetadataProcessor(job);
+        break;
+      default:
+        console.log(`[worker] Job ${job.id} (${job.name}) belum memiliki processor.`);
+    }
   },
   { connection },
 );
@@ -52,6 +60,7 @@ console.log(`[worker] Forkekan-mint worker berjalan. Queue: "${VIDEO_PROCESSING_
 async function shutdown() {
   console.log('[worker] Menutup worker...');
   await worker.close();
+  await prisma.$disconnect();
   connection.disconnect();
   process.exit(0);
 }

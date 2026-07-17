@@ -26,6 +26,16 @@ export const DEFAULT_UPLOAD_DIR = 'storage/uploads';
 /** Disk StorageObject untuk penyimpanan lokal (docs/04-erd.md). */
 export const LOCAL_STORAGE_DISK = 'local';
 
-/** Sentinel metadata sebelum ekstraksi ffprobe oleh worker (fase berikutnya). */
+/** Sentinel metadata sebelum ekstraksi ffprobe oleh worker. */
 export const METADATA_PENDING_NUMBER = 0;
 export const METADATA_PENDING_CODEC = 'unknown';
+
+/**
+ * Queue & job untuk background processing (BullMQ).
+ * Nama yang sama dipakai worker (apps/worker/src/jobs); jaga tetap sinkron.
+ */
+export const VIDEO_PROCESSING_QUEUE = 'video-processing';
+export const EXTRACT_METADATA_JOB = 'extract-metadata';
+
+export const METADATA_JOB_ATTEMPTS = 3;
+export const METADATA_JOB_BACKOFF_MS = 5_000;
