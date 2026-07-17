@@ -7,6 +7,7 @@ import path from 'node:path';
 import { diskStorage } from 'multer';
 
 import { AuthModule } from '../auth/auth.module';
+import { QueueModule } from '../common/queue/queue.module';
 import { MetadataQueueService } from './metadata-queue.service';
 import { UploadsController } from './uploads.controller';
 import { UploadsRepository } from './uploads.repository';
@@ -27,6 +28,7 @@ function isAllowedVideo(originalname: string, mimetype: string): boolean {
 @Module({
   imports: [
     AuthModule,
+    QueueModule,
     MulterModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {

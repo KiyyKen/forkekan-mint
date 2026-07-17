@@ -80,6 +80,19 @@ pnpm dev
 | `pnpm format`       | Format kode dengan Prettier                |
 | `pnpm db:generate`  | Generate Prisma Client                     |
 | `pnpm db:migrate`   | Jalankan migrasi database (development)    |
+| `pnpm db:migrate:deploy` | Terapkan migrasi tanpa prompt (production) |
+| `pnpm db:seed`      | Isi data awal (Platform Presets)           |
+
+## Production Deployment
+
+Lihat [DEPLOYMENT.md](DEPLOYMENT.md) untuk panduan deployment production lengkap (Docker Compose, environment variable wajib, migration, HTTPS, checklist, dan rollback). Strategi arsitektural lengkap ada di [docs/11-deployment.md](docs/11-deployment.md).
+
+```bash
+cp .env.example .env   # isi seluruh nilai — lihat DEPLOYMENT.md §3
+docker compose -f infra/compose/docker-compose.prod.yml build
+docker compose -f infra/compose/docker-compose.prod.yml run --rm api pnpm --filter @forkekan/api db:migrate:deploy
+docker compose -f infra/compose/docker-compose.prod.yml up -d
+```
 
 ## Dokumentasi
 

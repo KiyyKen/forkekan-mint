@@ -10,3 +10,13 @@ export interface ExtractMetadataJobData {
   /** Path absolut file video pada disk lokal. */
   filePath: string;
 }
+
+export const PROCESS_VIDEO_JOB = 'process-video';
+
+export interface ProcessVideoJobData {
+  processingJobId: string;
+  /** Path absolut file input pada disk lokal. */
+  inputPath: string;
+  /** Direktori absolut untuk file hasil encoding. */
+  outputDir: string;
+}

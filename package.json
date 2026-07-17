@@ -18,6 +18,7 @@
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @forkekan/api db:generate",
     "db:migrate": "pnpm --filter @forkekan/api db:migrate",
+    "db:migrate:deploy": "pnpm --filter @forkekan/api db:migrate:deploy",
     "db:seed": "pnpm --filter @forkekan/api db:seed",
     "prepare": "husky"
   },

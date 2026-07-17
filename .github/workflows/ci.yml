@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
     name: Lint, Typecheck, Build & Test
@@ -24,6 +28,14 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -41,3 +53,51 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Audit dependencies (non-blocking)
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
+
+  docker-build:
+    name: Docker Build (production images)
+    runs-on: ubuntu-latest
+    # Validasi Dockerfile production terpisah dari job `ci` di atas — kegagalan
+    # di sini tidak memblokir status check `ci` yang sudah ada.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API (production target)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/api.Dockerfile
+          target: production
+          push: false
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build Worker (production target)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/worker.Dockerfile
+          target: production
+          push: false
+          cache-from: type=gha,scope=worker
+          cache-to: type=gha,mode=max,scope=worker
+
+      - name: Build Web (production target)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/web.Dockerfile
+          target: production
+          push: false
+          build-args: |
+            VITE_API_URL=/api/v1
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web

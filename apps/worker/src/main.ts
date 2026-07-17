@@ -2,9 +2,10 @@ import { Worker, type Job } from 'bullmq';
 import { config as loadEnv } from 'dotenv';
 import IORedis from 'ioredis';
 
-import { EXTRACT_METADATA_JOB } from './jobs/job-names';
+import { EXTRACT_METADATA_JOB, PROCESS_VIDEO_JOB } from './jobs/job-names';
 import { VIDEO_PROCESSING_QUEUE } from './jobs/queue-names';
 import { extractMetadataProcessor } from './processors/extract-metadata.processor';
+import { processVideoProcessor } from './processors/process-video.processor';
 import { prisma } from './services/prisma';
 
 loadEnv({ path: ['.env', '../../.env'] });
@@ -32,13 +33,16 @@ connection.on('ready', () => {
   console.log(`[worker] Terhubung ke Redis: ${redisUrl}`);
 });
 
-// Encoding FFmpeg dan thumbnail menyusul pada fase Processing Pipeline.
+// Thumbnail generation menyusul pada fase berikutnya.
 const worker = new Worker(
   VIDEO_PROCESSING_QUEUE,
   async (job: Job) => {
     switch (job.name) {
       case EXTRACT_METADATA_JOB:
         await extractMetadataProcessor(job);
+        break;
+      case PROCESS_VIDEO_JOB:
+        await processVideoProcessor(job);
         break;
       default:
         console.log(`[worker] Job ${job.id} (${job.name}) belum memiliki processor.`);

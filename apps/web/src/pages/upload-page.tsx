@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { APP_NAME } from '@forkekan/shared';
 
+import { OptimizePanel } from '@/components/optimize-panel';
 import { UploadDropzone } from '@/components/upload-dropzone';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -33,8 +34,7 @@ export function UploadPage() {
       <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
         <h1 className="text-balance text-2xl font-bold">Upload video</h1>
         <p className="text-pretty mt-2 text-sm text-muted-foreground">
-          Unggah video yang ingin dioptimalkan. Pemilihan platform tujuan tersedia setelah fase
-          berikutnya.
+          Unggah video, lihat rekomendasi platform, lalu optimalkan.
         </p>
 
         <div className="mt-8">
@@ -54,18 +54,15 @@ export function UploadPage() {
           )}
 
           {upload.status === 'success' && upload.result && (
-            <div role="status" className="rounded-xl border border-border bg-card p-6">
-              <div className="flex items-center gap-2">
+            <div className="space-y-6">
+              <div role="status" className="flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-4">
                 <CheckCircle2 aria-hidden="true" className="size-5 text-success" />
-                <p className="font-medium">Video berhasil diunggah</p>
+                <p className="text-sm font-medium">Video berhasil diunggah</p>
+                <Button variant="ghost" size="sm" className="ml-auto" onClick={upload.reset}>
+                  Unggah video lain
+                </Button>
               </div>
-              <p className="text-pretty mt-2 text-sm text-muted-foreground">
-                ID upload:{' '}
-                <span className="font-mono text-xs tabular-nums">{upload.result.uploadId}</span>
-              </p>
-              <Button variant="secondary" size="sm" className="mt-4" onClick={upload.reset}>
-                Unggah video lain
-              </Button>
+              <OptimizePanel uploadId={upload.result.uploadId} onReset={upload.reset} />
             </div>
           )}
 

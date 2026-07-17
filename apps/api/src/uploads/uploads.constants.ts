@@ -31,10 +31,9 @@ export const METADATA_PENDING_NUMBER = 0;
 export const METADATA_PENDING_CODEC = 'unknown';
 
 /**
- * Queue & job untuk background processing (BullMQ).
+ * Job ekstraksi metadata pada queue video-processing.
  * Nama yang sama dipakai worker (apps/worker/src/jobs); jaga tetap sinkron.
  */
-export const VIDEO_PROCESSING_QUEUE = 'video-processing';
 export const EXTRACT_METADATA_JOB = 'extract-metadata';
 
 export const METADATA_JOB_ATTEMPTS = 3;
