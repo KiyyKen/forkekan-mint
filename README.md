@@ -13,9 +13,8 @@ Monorepo untuk Forkekan-mint — aplikasi optimasi video agar tidak "burik" saat
 
 ## Fitur
 
-- **Rekomendasi AI** — video dianalisis lalu diberi skor kecocokan per platform, lengkap dengan alasannya.
-- **Preset multi-platform** — WhatsApp, Instagram, TikTok, Telegram, Discord, YouTube Shorts, Facebook, dan lainnya.
-- **AI Fine-Tune (opsional)** — CRF, bitrate, fps, dan scale disesuaikan otomatis dengan karakter video sumber.
+- **Platform Profile siap pakai** — WhatsApp Story sebagai default yang direkomendasikan, plus Instagram, TikTok, Telegram, Discord, YouTube Shorts, Facebook, dan lainnya. Tiap profil membawa parameter encoding lengkap (codec, CRF/bitrate, pixel format, scaling, audio).
+- **AI Fine-Tune (opsional)** — setelah platform dipilih, AI menyesuaikan CRF, bitrate, fps, dan scale berdasarkan metadata video sumber, lengkap dengan alasannya. Bisa di-reset ke default platform kapan saja. AI tidak pernah mengganti platform pilihan user.
 - **Proses di background** — antrean BullMQ + FFmpeg dengan progress real-time.
 - **Upload hingga 500 MB** — mendukung MP4, MOV, AVI, MKV, dan WEBM.
 - **Download aman** — link download sementara yang kedaluwarsa otomatis.
@@ -74,7 +73,7 @@ forkekan-mint/
 - Node.js `>= 20.19`
 - pnpm `>= 10`
 - Docker (untuk PostgreSQL & Redis lokal)
-- FFmpeg (untuk worker, mulai Phase 4)
+- FFmpeg & ffprobe (untuk worker — isi `FFMPEG_PATH`/`FFPROBE_PATH` di `.env` jika tidak ada di `PATH`)
 
 ## Getting Started
 
@@ -85,11 +84,13 @@ pnpm install
 # 2. Siapkan environment
 cp .env.example .env
 
-# 3. Jalankan PostgreSQL & Redis (opsional untuk Phase 1)
+# 3. Jalankan PostgreSQL & Redis
 docker compose up -d
 
-# 4. Generate Prisma Client
+# 4. Generate Prisma Client, terapkan migrasi, dan isi Platform Profile
 pnpm db:generate
+pnpm db:migrate
+pnpm db:seed
 
 # 5. Jalankan seluruh aplikasi (web + api + worker)
 pnpm dev
