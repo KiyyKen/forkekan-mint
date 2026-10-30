@@ -120,6 +120,8 @@ pnpm dev
 
 Lihat [DEPLOYMENT.md](DEPLOYMENT.md) untuk panduan deployment production lengkap (Docker Compose, environment variable wajib, migration, HTTPS, checklist, dan rollback). Strategi arsitektural lengkap ada di [docs/11-deployment.md](docs/11-deployment.md).
 
+Frontend bisa di-host di **Vercel** (konfigurasi sudah ada di [apps/web/vercel.json](apps/web/vercel.json)), sedangkan API + worker tetap di VPS/Coolify — lihat [DEPLOYMENT.md §11](DEPLOYMENT.md#11-frontend-di-vercel-opsional).
+
 ```bash
 cp .env.example .env   # isi seluruh nilai — lihat DEPLOYMENT.md §3
 docker compose -f infra/compose/docker-compose.prod.yml build

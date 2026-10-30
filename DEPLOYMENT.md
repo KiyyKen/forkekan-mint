@@ -33,6 +33,8 @@ Dua jalur deployment yang didukung:
 | **Coolify** (direkomendasikan blueprint) | Setiap service (`web`, `api`, `worker`) di-deploy sebagai aplikasi Docker terpisah lewat dashboard Coolify; Postgres & Redis sebagai managed resource; Traefik bawaan Coolify menangani HTTPS/Let's Encrypt. Lihat [infra/coolify/README.md](infra/coolify/README.md). |
 | **Docker Compose mandiri (VPS)** | `infra/compose/docker-compose.prod.yml` menjalankan seluruh service (`web`, `api`, `worker`, `postgres`, `redis`, `nginx`) dalam satu compose project. Cocok untuk VPS tanpa Coolify. TLS **tidak** disertakan — lihat §5. |
 
+Frontend juga bisa dipisah ke **Vercel** sementara backend tetap di salah satu jalur di atas — lihat §11.
+
 ---
 
 ## 2. Prasyarat
@@ -194,3 +196,57 @@ Blueprint menetapkan pemantauan CPU, memory, disk usage, queue length, worker st
 - **Admin Panel** (Phase 9) — `GET /admin/dashboard` dan `GET /admin/storage` memberi ringkasan total user/upload/job dan storage terpakai lewat UI.
 
 Integrasi APM/dashboard eksternal (Grafana, Sentry, dll.) belum diimplementasikan — lihat TODO pada laporan Phase 10.
+
+---
+
+## 11. Frontend di Vercel (opsional)
+
+Frontend (`apps/web`) adalah SPA statis, jadi bisa di-host di Vercel. **API dan worker tetap harus berjalan di VPS/Coolify** (§4) karena Vercel menjalankan backend sebagai serverless function:
+
+- worker BullMQ + FFmpeg butuh proses yang terus hidup,
+- upload hingga 500 MB melebihi batas body request function,
+- storage lokal (`storage_data`) harus berupa disk permanen yang dipakai bersama api & worker.
+
+```text
+Browser ──► Vercel (apps/web, statis)
+   │
+   └──────► https://api.example.com ──► Nginx (§4) ──► API ──► Worker / PostgreSQL / Redis
+```
+
+### 11.1 Siapkan backend lebih dulu
+
+Deploy backend dengan §4, lalu pastikan:
+
+| Variable (`.env` server) | Nilai |
+| --- | --- |
+| `CORS_ORIGIN` | Domain frontend Vercel, mis. `https://forkekan-mint.vercel.app`. Hanya **satu** origin — preview deployment Vercel (URL berbeda per commit) akan ditolak CORS. |
+| `API_PUBLIC_URL` | Origin publik API, mis. `https://api.example.com` (untuk signed download URL). |
+
+API **wajib HTTPS** (§5). Halaman Vercel selalu HTTPS, sehingga browser memblokir request ke API `http://` (mixed content).
+
+Service `web` pada `docker-compose.prod.yml` tetap boleh berjalan; ia tidak dipakai bila frontend diakses lewat Vercel.
+
+### 11.2 Buat project di Vercel
+
+1. vercel.com → **Add New → Project** → import repository ini.
+2. **Root Directory**: `apps/web`. Sisanya sudah diatur oleh [apps/web/vercel.json](apps/web/vercel.json) (framework Vite, `pnpm build`, output `dist`, SPA fallback, cache asset). Vercel mendeteksi pnpm workspace dan menginstal dari root repository, sehingga package `@forkekan/*` ikut terpasang.
+3. **Environment Variables** (Production):
+
+   | Variable | Nilai |
+   | --- | --- |
+   | `VITE_API_URL` | `https://api.example.com/api/v1` |
+   | `VITE_GOOGLE_CLIENT_ID` | Client ID Google OAuth (sama dengan `GOOGLE_CLIENT_ID` backend). |
+   | `ENABLE_EXPERIMENTAL_COREPACK` | `1` — opsional, agar Vercel memakai versi pnpm persis dari field `packageManager`. |
+
+   Kedua variabel `VITE_*` bersifat **build-time** — setiap perubahan nilai butuh **Redeploy**.
+4. **Deploy.**
+
+### 11.3 Google OAuth
+
+Di Google Cloud Console → Credentials → OAuth client, tambahkan domain Vercel (mis. `https://forkekan-mint.vercel.app`) ke **Authorized JavaScript origins**. Tanpa ini tombol "Masuk dengan Google" gagal.
+
+### 11.4 Verifikasi
+
+- Buka `https://<domain-vercel>/upload` lalu **refresh** — halaman harus tetap tampil (bukan 404), menandakan SPA fallback aktif.
+- Upload video pendek → pilih platform → **Optimalkan** → **Download video** berhasil.
+- Bila request ke API gagal, cek tab Network browser: error CORS berarti `CORS_ORIGIN` belum sesuai; `blocked:mixed-content` berarti API belum HTTPS.
