@@ -6,6 +6,11 @@
 
 Monorepo untuk Forkekan-mint — aplikasi optimasi video agar tidak "burik" saat diunggah ke berbagai platform.
 
+**Live demo:** [forkekan-mint.vercel.app](https://forkekan-mint.vercel.app/)
+
+> [!NOTE]
+> Demo saat ini baru frontend (Vercel). Backend (API + worker FFmpeg) belum di-deploy, sehingga upload dan optimasi video belum berfungsi di demo — jalankan secara lokal lewat [Getting Started](#getting-started) untuk mencoba alur lengkapnya.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/landing-dark.png">
   <img alt="Landing page Forkekan-mint" src=".github/assets/screenshots/landing-light.png">
