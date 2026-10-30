@@ -4,4 +4,5 @@ export interface PresetSummary {
   name: string;
   slug: string;
   resolution: string;
+  description: string | null;
 }

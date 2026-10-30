@@ -14,7 +14,7 @@ export class ProcessingController {
 
   @Post()
   create(@Body() dto: CreateProcessingDto): Promise<CreateProcessingResult> {
-    return this.processingService.createJob(dto.uploadId, dto.presetId);
+    return this.processingService.createJob(dto.uploadId, dto.presetId, dto.aiTuning);
   }
 
   @Get(':jobId')

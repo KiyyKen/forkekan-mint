@@ -40,6 +40,11 @@ enum LogLevel {
   ERROR
 }
 
+enum BitrateStrategy {
+  CBR
+  CRF
+}
+
 // --------------------------------------------
 // Models
 // --------------------------------------------
@@ -173,6 +178,29 @@ model PlatformPreset {
 
   targetAudioBitrate Int
 
+  /// Nilai CRF (0-51) bila bitrateStrategy = CRF. Null berarti mode CBR murni.
+  crf Int?
+
+  bitrateStrategy BitrateStrategy @default(CBR)
+
+  pixelFormat String @default("yuv420p")
+
+  /// Ekstensi container output (mp4, mov, webm, dll).
+  container String @default("mp4")
+
+  /// x264/x265 speed-vs-quality preset (ultrafast..veryslow).
+  videoPreset String @default("veryfast")
+
+  /// Argumen FFmpeg tambahan, mis. ["-movflags", "+faststart"].
+  optimizationFlags String[] @default(["-movflags", "+faststart"])
+
+  audioChannels Int @default(2)
+
+  audioSampleRate Int @default(44100)
+
+  /// Strategi scaling: "pad" (letterbox, default) atau "crop" (fill & crop).
+  scalingMode String @default("pad")
+
   processingJobs ProcessingJob[]
 
   favorites FavoritePreset[]
@@ -204,6 +232,9 @@ model ProcessingJob {
   finishedAt DateTime?
 
   failedReason String?
+
+  /// Override opsional dari AI Fine-Tune: { crf?, bitrate?, fps?, scale? }. Null = pakai profil platform apa adanya.
+  aiTuning Json?
 
   result ProcessingResult?
 

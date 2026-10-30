@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { BitrateStrategy, PrismaClient } from '@prisma/client';
 
 /**
  * Seed data awal — acuan: docs/08-database-schema.md (Seed Strategy).
@@ -26,19 +26,59 @@ interface PlatformPresetSeed {
   targetBitrate: number;
   targetAudioCodec: string;
   targetAudioBitrate: number;
+  crf: number | null;
+  bitrateStrategy: BitrateStrategy;
+  pixelFormat: string;
+  container: string;
+  videoPreset: string;
+  optimizationFlags: string[];
+  audioChannels: number;
+  audioSampleRate: number;
+  scalingMode: string;
 }
+
+/** Nilai default dipakai oleh semua preset kecuali yang secara eksplisit override. */
+const DEFAULT_PROFILE_FIELDS = {
+  crf: null,
+  bitrateStrategy: BitrateStrategy.CBR,
+  pixelFormat: 'yuv420p',
+  container: 'mp4',
+  videoPreset: 'veryfast',
+  optimizationFlags: ['-movflags', '+faststart'],
+  audioChannels: 2,
+  audioSampleRate: 44100,
+  scalingMode: 'pad',
+} as const satisfies Omit<
+  PlatformPresetSeed,
+  | 'name'
+  | 'slug'
+  | 'description'
+  | 'targetResolution'
+  | 'targetCodec'
+  | 'targetFps'
+  | 'targetBitrate'
+  | 'targetAudioCodec'
+  | 'targetAudioBitrate'
+>;
 
 const PLATFORM_PRESETS: PlatformPresetSeed[] = [
   {
     name: 'WhatsApp Story',
     slug: 'whatsapp-story',
-    description: 'Optimasi video untuk WhatsApp Status/Story (vertikal, maks 30 detik).',
+    description: 'Platform utama — kualitas terbaik yang bertahan setelah kompresi ulang WhatsApp.',
     targetResolution: '720x1280',
     targetCodec: 'h264',
     targetFps: 30,
     targetBitrate: 2000,
     targetAudioCodec: 'aac',
     targetAudioBitrate: 128,
+    ...DEFAULT_PROFILE_FIELDS,
+    // WhatsApp mengompres ulang setiap Story yang diunggah. Mode CRF menjaga
+    // detail secara adaptif per-frame, memberi "bahan" lebih baik untuk
+    // kompresi ulang itu dibanding target CBR tetap yang sudah dipangkas duluan.
+    crf: 23,
+    bitrateStrategy: BitrateStrategy.CRF,
+    videoPreset: 'slow',
   },
   {
     name: 'WhatsApp Chat',
@@ -50,6 +90,7 @@ const PLATFORM_PRESETS: PlatformPresetSeed[] = [
     targetBitrate: 1000,
     targetAudioCodec: 'aac',
     targetAudioBitrate: 96,
+    ...DEFAULT_PROFILE_FIELDS,
   },
   {
     name: 'Instagram Story',
@@ -61,6 +102,7 @@ const PLATFORM_PRESETS: PlatformPresetSeed[] = [
     targetBitrate: 4000,
     targetAudioCodec: 'aac',
     targetAudioBitrate: 128,
+    ...DEFAULT_PROFILE_FIELDS,
   },
   {
     name: 'Instagram Reels',
@@ -72,6 +114,7 @@ const PLATFORM_PRESETS: PlatformPresetSeed[] = [
     targetBitrate: 5000,
     targetAudioCodec: 'aac',
     targetAudioBitrate: 128,
+    ...DEFAULT_PROFILE_FIELDS,
   },
   {
     name: 'TikTok',
@@ -83,6 +126,7 @@ const PLATFORM_PRESETS: PlatformPresetSeed[] = [
     targetBitrate: 6000,
     targetAudioCodec: 'aac',
     targetAudioBitrate: 128,
+    ...DEFAULT_PROFILE_FIELDS,
   },
   {
     name: 'Telegram',
@@ -94,6 +138,7 @@ const PLATFORM_PRESETS: PlatformPresetSeed[] = [
     targetBitrate: 2500,
     targetAudioCodec: 'aac',
     targetAudioBitrate: 128,
+    ...DEFAULT_PROFILE_FIELDS,
   },
   {
     name: 'Discord',
@@ -105,6 +150,7 @@ const PLATFORM_PRESETS: PlatformPresetSeed[] = [
     targetBitrate: 4000,
     targetAudioCodec: 'aac',
     targetAudioBitrate: 128,
+    ...DEFAULT_PROFILE_FIELDS,
   },
   {
     name: 'Facebook Story',
@@ -116,6 +162,7 @@ const PLATFORM_PRESETS: PlatformPresetSeed[] = [
     targetBitrate: 4000,
     targetAudioCodec: 'aac',
     targetAudioBitrate: 128,
+    ...DEFAULT_PROFILE_FIELDS,
   },
   {
     name: 'YouTube Shorts',
@@ -127,6 +174,7 @@ const PLATFORM_PRESETS: PlatformPresetSeed[] = [
     targetBitrate: 8000,
     targetAudioCodec: 'aac',
     targetAudioBitrate: 128,
+    ...DEFAULT_PROFILE_FIELDS,
   },
 ];
 

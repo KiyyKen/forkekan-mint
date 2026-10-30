@@ -5,12 +5,11 @@ import { mkdir, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
+import type { AiTuning } from '../ffmpeg/ffmpeg';
 import { runFfmpeg } from '../ffmpeg/ffmpeg';
 import type { ProcessVideoJobData } from '../jobs/job-names';
 import { prisma } from '../services/prisma';
 import { addProcessingLog } from '../services/processing-log';
-
-const OUTPUT_EXTENSION = '.mp4';
 
 /** Simpan progress ke DB hanya tiap kelipatan ini agar tidak membanjiri database. */
 const PROGRESS_DB_STEP = 5;
@@ -55,20 +54,28 @@ export async function processVideoProcessor(job: Job<ProcessVideoJobData>): Prom
   try {
     await mkdir(outputDir, { recursive: true });
 
-    const outputFilename = `${randomUUID()}${OUTPUT_EXTENSION}`;
+    const tuning = (record.aiTuning as AiTuning | null) ?? null;
+    const outputFilename = `${randomUUID()}.${record.preset.container}`;
     const outputPath = path.join(outputDir, outputFilename);
 
     let lastSavedProgress = 0;
-    await runFfmpeg(inputPath, outputPath, record.preset, record.mediaFile.duration, (percent) => {
-      void job.updateProgress(percent);
+    await runFfmpeg(
+      inputPath,
+      outputPath,
+      record.preset,
+      record.mediaFile.duration,
+      (percent) => {
+        void job.updateProgress(percent);
 
-      if (percent - lastSavedProgress >= PROGRESS_DB_STEP) {
-        lastSavedProgress = percent;
-        void prisma.processingJob
-          .update({ where: { id: processingJobId }, data: { progress: percent } })
-          .catch(() => undefined);
-      }
-    });
+        if (percent - lastSavedProgress >= PROGRESS_DB_STEP) {
+          lastSavedProgress = percent;
+          void prisma.processingJob
+            .update({ where: { id: processingJobId }, data: { progress: percent } })
+            .catch(() => undefined);
+        }
+      },
+      tuning,
+    );
 
     const outputStats = await stat(outputPath);
     const processingTimeSeconds = Math.round((Date.now() - startedAt.getTime()) / 1000);
@@ -79,9 +86,9 @@ export async function processVideoProcessor(job: Job<ProcessVideoJobData>): Prom
           processingJobId,
           outputFilename,
           outputSize: BigInt(outputStats.size),
-          outputResolution: record.preset.targetResolution,
+          outputResolution: tuning?.scale ?? record.preset.targetResolution,
           outputCodec: record.preset.targetCodec,
-          outputBitrate: record.preset.targetBitrate,
+          outputBitrate: tuning?.bitrate ?? record.preset.targetBitrate,
           processingTime: processingTimeSeconds,
         },
       }),

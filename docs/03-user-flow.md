@@ -55,11 +55,11 @@ Video Analysis
 
 ↓
 
-Compatibility Score
+Pilih Platform (default: WhatsApp Story)
 
 ↓
 
-Pilih Platform
+(Opsional) AI Fine-Tune
 
 ↓
 
@@ -107,11 +107,11 @@ Video Analysis
 
 ↓
 
-Compatibility Score
+Pilih Platform (default: WhatsApp Story)
 
 ↓
 
-Pilih Platform
+(Opsional) AI Fine-Tune
 
 ↓
 
@@ -221,28 +221,38 @@ System membaca metadata video:
 - Bitrate
 - Duration
 
-Kemudian menghasilkan:
-
-- Compatibility Score
-- Smart Recommendation
+Metadata ini dipakai untuk validasi upload dan, bila user mengaktifkan AI
+Fine-Tune, untuk menghitung saran penyesuaian parameter (lihat AI Flow).
+Tidak ada skor atau rekomendasi yang dihasilkan otomatis di langkah ini.
 
 ---
 
 # Platform Selection Flow
 
-User memilih tujuan upload.
+Fokus utama produk: optimasi untuk **WhatsApp Story**, dipilih otomatis
+sebagai default dengan badge "Direkomendasikan". Platform lain tetap
+didukung penuh sebagai pilihan sekunder di bawah "Platform lainnya".
 
-Pilihan:
+User memilih platform tujuan (dapat langsung memakai default atau mengganti):
 
-- WhatsApp Story
-- WhatsApp Chat
+Platform utama:
+
+- WhatsApp Story (default)
 - Instagram Story
-- Instagram Reels
 - TikTok
-- Telegram
 - Discord
-- Facebook Story
+- Telegram
 - YouTube Shorts
+
+Platform lainnya:
+
+- WhatsApp Chat
+- Instagram Reels
+- Facebook Story
+
+↓
+
+(Opsional) AI Fine-Tune
 
 ↓
 
@@ -376,23 +386,31 @@ Registered User dapat:
 
 # AI Flow
 
-AI hanya membantu menjelaskan hasil analisis.
+AI bersifat opsional dan hanya aktif setelah user memilih platform sendiri
+(lihat Platform Selection Flow). AI tidak pernah memilih atau mengganti
+platform — perannya terbatas menyesuaikan sebagian kecil parameter encoding
+pada Platform Profile yang sudah dipilih:
+
+- CRF
+- Bitrate
+- FPS
+- Scale
+
+User menyalakan toggle "AI Fine-Tune" (opsional, mati secara default).
+Sistem menghitung saran deterministik dari metadata video dibanding target
+platform, lalu menerapkannya otomatis dengan ringkasan singkat + alasan.
 
 Contoh:
 
-Video Quality
+AI menyesuaikan: CRF 21 · 24fps
 
-78 / 100
+Alasan:
 
-Penyebab:
+- Bitrate sumber lebih rendah dari target
+- FPS sumber lebih rendah dari target
 
-- Bitrate terlalu rendah
-- FPS kurang ideal
-- Codec kurang sesuai
-
-Rekomendasi:
-
-Optimize untuk WhatsApp Story
+User dapat menekan "Reset ke default platform" kapan saja untuk kembali ke
+Platform Profile apa adanya.
 
 ---
 

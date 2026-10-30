@@ -53,6 +53,7 @@ describe('ProcessingService', () => {
     startedAt: null,
     finishedAt: null,
     failedReason: null,
+    aiTuning: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -93,12 +94,23 @@ describe('ProcessingService', () => {
         status: 'waiting',
       });
 
-      expect(processingRepository.createJob).toHaveBeenCalledWith('media-1', 'preset-1');
+      expect(processingRepository.createJob).toHaveBeenCalledWith('media-1', 'preset-1', undefined);
       expect(queue.add).toHaveBeenCalledWith(
         PROCESS_VIDEO_JOB,
         expect.objectContaining({ processingJobId: 'job-1' }),
         expect.objectContaining({ attempts: 3 }),
       );
+    });
+
+    it('meneruskan aiTuning ke repository sebagai plain object saat disediakan', async () => {
+      mockHappyPath();
+
+      await processingService.createJob('upload-1', 'preset-1', { crf: 22, fps: 24 });
+
+      expect(processingRepository.createJob).toHaveBeenCalledWith('media-1', 'preset-1', {
+        crf: 22,
+        fps: 24,
+      });
     });
 
     it('menolak upload yang tidak ada', async () => {

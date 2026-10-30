@@ -2,7 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
 import { AiRepository } from './ai.repository';
-import { AiService } from './ai.service';
+import { AiService, RecommendationResult } from './ai.service';
 
 describe('AiService', () => {
   let aiService: AiService;
@@ -10,6 +10,7 @@ describe('AiService', () => {
   const aiRepository = {
     findUploadWithMedia: jest.fn(),
     findAllPresets: jest.fn(),
+    findPresetById: jest.fn(),
   };
 
   const readyMediaFile = {
@@ -73,7 +74,7 @@ describe('AiService', () => {
     });
     aiRepository.findAllPresets.mockResolvedValue(presets);
 
-    const result = await aiService.recommend('upload-1');
+    const result = (await aiService.recommend('upload-1')) as RecommendationResult;
 
     expect(result.recommendedPreset).toHaveProperty('id');
     expect(result.recommendedPreset).toHaveProperty('name');
@@ -104,5 +105,47 @@ describe('AiService', () => {
     aiRepository.findUploadWithMedia.mockResolvedValue({ id: 'upload-1', mediaFile: null });
 
     await expect(aiService.recommend('upload-1')).rejects.toThrow(BadRequestException);
+  });
+
+  describe('mode AI Fine-Tune (presetId disertakan)', () => {
+    const whatsappStoryProfile = {
+      id: 'p-wa',
+      name: 'WhatsApp Story',
+      slug: 'whatsapp-story',
+      targetResolution: '720x1280',
+      targetCodec: 'h264',
+      targetFps: 30,
+      targetBitrate: 2000,
+      targetAudioBitrate: 128,
+      crf: 23,
+      bitrateStrategy: 'CRF',
+    };
+
+    it('mengembalikan saran tuning untuk preset yang sudah dipilih, bukan ranking', async () => {
+      aiRepository.findUploadWithMedia.mockResolvedValue({
+        id: 'upload-1',
+        mediaFile: { ...readyMediaFile, fps: 24 },
+      });
+      aiRepository.findPresetById.mockResolvedValue(whatsappStoryProfile);
+
+      const result = await aiService.recommend('upload-1', 'p-wa');
+
+      expect(result).toHaveProperty('presetId', 'p-wa');
+      expect(result).not.toHaveProperty('recommendedPreset');
+      expect(result).not.toHaveProperty('alternatives');
+      expect(aiRepository.findAllPresets).not.toHaveBeenCalled();
+    });
+
+    it('melempar NotFoundException bila preset yang diminta tidak ada', async () => {
+      aiRepository.findUploadWithMedia.mockResolvedValue({
+        id: 'upload-1',
+        mediaFile: readyMediaFile,
+      });
+      aiRepository.findPresetById.mockResolvedValue(null);
+
+      await expect(aiService.recommend('upload-1', 'missing-preset')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 });

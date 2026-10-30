@@ -6,13 +6,14 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JobStatus, ProcessingJob } from '@prisma/client';
+import { JobStatus, Prisma, ProcessingJob } from '@prisma/client';
 import path from 'node:path';
 
 import { VideoProcessingQueueService } from '../common/queue/video-processing-queue.service';
 import { humanFileSize } from '../common/utils/human-file-size';
 import { DownloadsService } from '../downloads/downloads.service';
 import { DEFAULT_UPLOAD_DIR } from '../uploads/uploads.constants';
+import { AiTuningDto } from './dto/ai-tuning.dto';
 import {
   DEFAULT_OUTPUT_DIR,
   PROCESS_VIDEO_JOB,
@@ -80,7 +81,11 @@ export class ProcessingService {
    * upload harus tersedia, preset harus valid, dan job yang sama
    * tidak boleh diproses dua kali secara bersamaan.
    */
-  async createJob(uploadId: string, presetId: string): Promise<CreateProcessingResult> {
+  async createJob(
+    uploadId: string,
+    presetId: string,
+    aiTuning?: AiTuningDto,
+  ): Promise<CreateProcessingResult> {
     const upload = await this.processingRepository.findUploadWithMedia(uploadId);
     if (!upload) {
       throw new NotFoundException('Upload tidak ditemukan');
@@ -99,7 +104,11 @@ export class ProcessingService {
       throw new ConflictException('Video ini sedang diproses dengan preset yang sama');
     }
 
-    const job = await this.processingRepository.createJob(upload.mediaFile.id, presetId);
+    const job = await this.processingRepository.createJob(
+      upload.mediaFile.id,
+      presetId,
+      aiTuning ? (this.toJsonInput(aiTuning) as Prisma.InputJsonValue) : undefined,
+    );
 
     const enqueued = await this.queue.add<ProcessVideoJobData>(
       PROCESS_VIDEO_JOB,
@@ -166,6 +175,11 @@ export class ProcessingService {
       resolution: job.result.outputResolution,
       codec: job.result.outputCodec,
     };
+  }
+
+  /** Serialisasi DTO ke bentuk plain object agar aman disimpan sebagai kolom Json. */
+  private toJsonInput(dto: AiTuningDto): Record<string, unknown> {
+    return JSON.parse(JSON.stringify(dto)) as Record<string, unknown>;
   }
 
   /** Kontrak API memakai status lowercase ("waiting"), enum Prisma uppercase. */

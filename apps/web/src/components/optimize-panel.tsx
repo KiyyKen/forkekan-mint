@@ -1,9 +1,10 @@
 import { CircleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { AiFineTuneToggle } from '@/components/ai-fine-tune-toggle';
 import { OptimizationResult } from '@/components/optimization-result';
+import { PlatformPicker } from '@/components/platform-picker';
 import { ProcessingStepper } from '@/components/processing-stepper';
-import { RecommendationCard } from '@/components/recommendation-card';
 import { Button } from '@/components/ui/button';
 import { usePresets } from '@/hooks/use-presets';
 import {
@@ -12,7 +13,7 @@ import {
   useProcessingResult,
   useProcessingStatus,
 } from '@/hooks/use-processing';
-import { useRecommendation } from '@/hooks/use-recommendation';
+import type { AiTuning } from '@/types/processing';
 
 interface OptimizePanelProps {
   uploadId: string;
@@ -21,36 +22,33 @@ interface OptimizePanelProps {
 
 interface ProcessingContext {
   presetName: string;
-  compatibilityScore: number | null;
 }
 
-function RecommendationSkeleton() {
+/** Platform default produk — dipilih otomatis begitu daftar preset dimuat. */
+const DEFAULT_PLATFORM_SLUG = 'whatsapp-story';
+
+function PlatformPickerSkeleton() {
   return (
     <div
       role="status"
-      aria-label="Menganalisis video"
-      className="rounded-xl border-2 border-primary/10 bg-card p-6 sm:p-8"
+      aria-label="Memuat platform"
+      className="rounded-xl border border-border bg-card p-6"
     >
       <div className="h-4 w-32 animate-pulse rounded-md bg-muted" />
-      <div className="mt-4 flex items-center justify-between">
-        <div className="h-7 w-48 animate-pulse rounded-md bg-muted" />
-        <div className="h-9 w-16 animate-pulse rounded-md bg-muted" />
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {[0, 1, 2, 3, 4, 5].map((index) => (
+          <div key={index} className="h-20 animate-pulse rounded-xl bg-muted" />
+        ))}
       </div>
-      <div className="mt-6 space-y-2">
-        <div className="h-4 w-full animate-pulse rounded-md bg-muted" />
-        <div className="h-4 w-2/3 animate-pulse rounded-md bg-muted" />
-      </div>
-      <p className="mt-4 text-sm text-muted-foreground">Menganalisis video Anda...</p>
     </div>
   );
 }
 
 /**
- * Alur setelah upload: rekomendasi preset → pilih (rekomendasi/manual)
- * → progress processing realtime → selesai/gagal.
+ * Alur setelah upload: pilih Platform Profile (default WhatsApp Story)
+ * → (opsional) AI Fine-Tune → progress processing realtime → selesai/gagal.
  */
 export function OptimizePanel({ uploadId, onReset }: OptimizePanelProps) {
-  const recommendation = useRecommendation(uploadId);
   const presets = usePresets();
   const createProcessing = useCreateProcessing();
   const jobId = createProcessing.data?.jobId ?? null;
@@ -59,11 +57,20 @@ export function OptimizePanel({ uploadId, onReset }: OptimizePanelProps) {
   const processingResult = useProcessingResult(jobId, status?.status === 'completed');
   const download = useDownloadResult();
   const [selectedPresetId, setSelectedPresetId] = useState('');
+  const [aiTuning, setAiTuning] = useState<AiTuning | null>(null);
   const [processingContext, setProcessingContext] = useState<ProcessingContext | null>(null);
   const [processingStartedAt, setProcessingStartedAt] = useState<number | null>(null);
   const [completedAt, setCompletedAt] = useState<number | null>(null);
 
   const isBusy = createProcessing.isPending || createProcessing.isSuccess;
+
+  // WhatsApp Story terpilih otomatis begitu daftar preset dimuat, kecuali
+  // user sudah memilih platform lain.
+  const defaultPresetId =
+    presets.data?.find((preset) => preset.slug === DEFAULT_PLATFORM_SLUG)?.id ??
+    presets.data?.[0]?.id ??
+    '';
+  const effectiveSelectedId = selectedPresetId || defaultPresetId;
 
   // Dibekukan sekali saat status pertama kali terdeteksi "completed", agar
   // waktu proses yang ditampilkan tidak terus bertambah pada render berikutnya.
@@ -73,15 +80,21 @@ export function OptimizePanel({ uploadId, onReset }: OptimizePanelProps) {
     }
   }, [status?.status, completedAt]);
 
-  function startProcessing(
-    presetId: string,
-    presetName: string,
-    compatibilityScore: number | null = null,
-  ) {
-    setProcessingContext({ presetName, compatibilityScore });
+  function selectPlatform(presetId: string) {
+    setSelectedPresetId(presetId);
+    // Tuning lama tidak relevan untuk platform baru — hitung ulang dari nol.
+    setAiTuning(null);
+  }
+
+  function startProcessing() {
+    const preset = presets.data?.find((item) => item.id === effectiveSelectedId);
+    if (!preset) {
+      return;
+    }
+    setProcessingContext({ presetName: preset.name });
     setProcessingStartedAt(Date.now());
     setCompletedAt(null);
-    createProcessing.mutate({ uploadId, presetId });
+    createProcessing.mutate({ uploadId, presetId: preset.id, aiTuning: aiTuning ?? undefined });
   }
 
   const processingTimeSeconds =
@@ -99,7 +112,6 @@ export function OptimizePanel({ uploadId, onReset }: OptimizePanelProps) {
               resolution={processingResult.data.resolution}
               codec={processingResult.data.codec}
               size={processingResult.data.size}
-              compatibilityScore={processingContext?.compatibilityScore ?? undefined}
               processingTimeSeconds={processingTimeSeconds}
               isDownloading={download.isPending}
               onDownload={() => jobId && download.mutate(jobId)}
@@ -149,70 +161,54 @@ export function OptimizePanel({ uploadId, onReset }: OptimizePanelProps) {
 
   return (
     <div className="space-y-6">
-      {recommendation.isPending && <RecommendationSkeleton />}
+      {presets.isPending && <PlatformPickerSkeleton />}
 
-      {recommendation.isError && (
+      {presets.isError && (
         <div role="alert" className="rounded-xl border border-border bg-card p-6">
           <div className="flex items-center gap-2">
             <CircleAlert aria-hidden="true" className="size-5 text-destructive" />
-            <p className="font-medium">Analisis belum tersedia</p>
+            <p className="font-medium">Daftar platform tidak bisa dimuat</p>
           </div>
-          <p className="text-pretty mt-2 text-sm text-muted-foreground">
-            Rekomendasi tidak bisa dimuat. Anda tetap bisa memilih preset secara manual di bawah.
-          </p>
-          <Button variant="outline" size="sm" className="mt-4" onClick={() => recommendation.refetch()}>
+          <Button variant="outline" size="sm" className="mt-4" onClick={() => presets.refetch()}>
             Coba lagi
           </Button>
         </div>
       )}
 
-      {recommendation.isSuccess && (
-        <RecommendationCard
-          recommendation={recommendation.data}
-          presets={presets.data}
-          onUse={startProcessing}
-          disabled={isBusy}
-        />
-      )}
+      {presets.isSuccess && (
+        <>
+          <PlatformPicker
+            presets={presets.data}
+            selectedPresetId={effectiveSelectedId}
+            onSelect={(preset) => selectPlatform(preset.id)}
+            disabled={isBusy}
+          />
 
-      <section aria-label="Pilih preset manual" className="rounded-xl border border-border bg-card p-6">
-        <h2 className="font-semibold">Atau pilih platform sendiri</h2>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <select
-            aria-label="Pilih platform tujuan"
-            value={selectedPresetId}
-            onChange={(event) => setSelectedPresetId(event.target.value)}
-            disabled={presets.isPending || isBusy}
-            className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:max-w-xs"
-          >
-            <option value="">
-              {presets.isPending ? 'Memuat preset...' : 'Pilih platform tujuan'}
-            </option>
-            {presets.data?.map((preset) => (
-              <option key={preset.id} value={preset.id}>
-                {preset.name} ({preset.resolution})
-              </option>
-            ))}
-          </select>
+          {effectiveSelectedId && (
+            <AiFineTuneToggle
+              uploadId={uploadId}
+              presetId={effectiveSelectedId}
+              onChange={setAiTuning}
+              disabled={isBusy}
+            />
+          )}
+
           <Button
-            variant="secondary"
-            disabled={selectedPresetId === '' || isBusy}
-            onClick={() => {
-              const preset = presets.data?.find((item) => item.id === selectedPresetId);
-              if (preset) {
-                startProcessing(preset.id, preset.name);
-              }
-            }}
+            size="lg"
+            className="w-full sm:w-auto"
+            disabled={isBusy || effectiveSelectedId === ''}
+            onClick={startProcessing}
           >
             Optimalkan
           </Button>
-        </div>
-        {createProcessing.isError && (
-          <p role="alert" className="text-pretty mt-3 text-sm text-destructive">
-            Gagal memulai optimasi: {createProcessing.error.message}
-          </p>
-        )}
-      </section>
+
+          {createProcessing.isError && (
+            <p role="alert" className="text-pretty text-sm text-destructive">
+              Gagal memulai optimasi: {createProcessing.error.message}
+            </p>
+          )}
+        </>
+      )}
     </div>
   );
 }

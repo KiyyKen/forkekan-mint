@@ -1,9 +1,17 @@
 import { apiRequest } from '@/services/api';
-import type { Recommendation } from '@/types/recommendation';
+import type { TuningSuggestion } from '@/types/recommendation';
 
-export function fetchRecommendation(uploadId: string): Promise<Recommendation> {
-  return apiRequest<Recommendation>('/ai/recommendation', {
+/**
+ * AI Fine-Tune — menyarankan penyesuaian kecil (CRF/bitrate/fps/scale) untuk
+ * platform yang sudah dipilih user. Mengirim `presetId` membuat
+ * POST /ai/recommendation beralih ke mode ini (docs/07).
+ */
+export function fetchAiTuningSuggestion(
+  uploadId: string,
+  presetId: string,
+): Promise<TuningSuggestion> {
+  return apiRequest<TuningSuggestion>('/ai/recommendation', {
     method: 'POST',
-    body: { uploadId },
+    body: { uploadId, presetId },
   });
 }

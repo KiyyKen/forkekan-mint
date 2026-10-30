@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleAlert, Download, Sparkles, UploadCloud } from 'lucide-react';
+import { CheckCircle2, CircleAlert, Download, ListChecks, UploadCloud } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 import { AppHeader } from '@/components/app-header';
@@ -16,8 +16,8 @@ interface NextStep {
 
 const NEXT_STEPS: NextStep[] = [
   { icon: UploadCloud, label: 'Upload' },
-  { icon: Sparkles, label: 'AI menganalisis' },
-  { icon: Download, label: 'Pilih & download' },
+  { icon: ListChecks, label: 'Pilih platform' },
+  { icon: Download, label: 'Download' },
 ];
 
 /** Strip mini "apa yang terjadi setelah upload" — hanya tampil sebelum ada file. */
@@ -47,7 +47,7 @@ export function UploadPage() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
         <h1 className="text-balance text-4xl font-bold tracking-tight">Upload video</h1>
         <p className="text-pretty mt-2 text-muted-foreground">
-          Upload video Anda, dapatkan rekomendasi platform dari AI, dan unduh hasilnya.
+          Upload video Anda, pilih platform tujuan, dan unduh hasil optimasinya.
         </p>
 
         <div className="mt-8">

@@ -225,16 +225,22 @@ Response
     "id": 1,
     "name": "WhatsApp Story",
     "slug": "whatsapp-story",
-    "resolution": "720x1280"
+    "resolution": "720x1280",
+    "description": "Platform utama — kualitas terbaik yang bertahan setelah kompresi ulang WhatsApp."
   },
   {
     "id": 2,
     "name": "Instagram Reels",
     "slug": "instagram-reels",
-    "resolution": "1080x1920"
+    "resolution": "1080x1920",
+    "description": "Optimasi video untuk Instagram Reels (vertikal 9:16)."
   }
 ]
 ```
+
+WhatsApp Story adalah platform default/utama produk. Platform lain tetap
+didukung penuh lewat endpoint yang sama, hanya diprioritaskan lebih rendah
+di UI.
 
 ---
 
@@ -249,9 +255,20 @@ Request
 ```json
 {
   "uploadId": "...",
-  "presetId": 1
+  "presetId": 1,
+  "aiTuning": {
+    "crf": 22,
+    "bitrate": 1800,
+    "fps": 24,
+    "scale": "640x1136"
+  }
 }
 ```
+
+`aiTuning` opsional — override kecil dari AI Fine-Tune di atas Platform
+Profile milik `presetId`. Setiap field opsional; tidak pernah mengganti
+`presetId` itu sendiri. Kosongkan field ini untuk memakai Platform Profile
+apa adanya.
 
 Response
 
@@ -446,11 +463,17 @@ Response
 
 # AI Recommendation
 
+AI bersifat opsional (AI Fine-Tune) — hanya menyesuaikan parameter kecil
+(CRF/bitrate/fps/scale) pada platform yang sudah dipilih user, tidak pernah
+memilih atau mengganti platform itu sendiri.
+
 ## POST /ai/recommendation
 
-Menghasilkan rekomendasi preset berdasarkan metadata video.
+Tanpa `presetId`: meranking seluruh preset (mode lama, tetap didukung).
+Dengan `presetId`: mode AI Fine-Tune — menyarankan penyesuaian untuk
+platform tersebut.
 
-Request
+Request (mode ranking)
 
 ```json
 {
@@ -458,7 +481,7 @@ Request
 }
 ```
 
-Response
+Response (mode ranking)
 
 ```json
 {
@@ -470,6 +493,31 @@ Response
   "reason": "Bitrate terlalu tinggi untuk WhatsApp."
 }
 ```
+
+Request (mode AI Fine-Tune)
+
+```json
+{
+  "uploadId": "...",
+  "presetId": 1
+}
+```
+
+Response (mode AI Fine-Tune)
+
+```json
+{
+  "presetId": 1,
+  "suggestedCrf": 21,
+  "suggestedBitrate": 1500,
+  "suggestedFps": 24,
+  "suggestedScale": "640x1136",
+  "reason": "Bitrate sumber di bawah target, diturunkan agar tidak boros ukuran file."
+}
+```
+
+Setiap field `suggested*` opsional — hanya muncul bila AI menemukan
+penyesuaian yang relevan untuk video tersebut.
 
 ---
 

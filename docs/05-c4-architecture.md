@@ -262,8 +262,12 @@ NestJS
 
 ## AI Module
 
+AI bersifat opsional — pengguna memilih Platform Profile sendiri (default
+WhatsApp Story); AI hanya diminta menyesuaikan sebagian kecil parameter
+encoding (CRF, bitrate, fps, scale) di atas profil yang sudah dipilih.
+
 - Video Explanation
-- Recommendation
+- AI Fine-Tune (penyesuaian parameter, bukan pemilihan platform)
 
 ---
 

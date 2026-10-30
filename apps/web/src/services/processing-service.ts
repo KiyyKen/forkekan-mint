@@ -1,13 +1,19 @@
 import { apiRequest } from '@/services/api';
-import type { ProcessingJobCreated, ProcessingResultInfo, ProcessingStatus } from '@/types/processing';
+import type {
+  AiTuning,
+  ProcessingJobCreated,
+  ProcessingResultInfo,
+  ProcessingStatus,
+} from '@/types/processing';
 
 export function createProcessingJob(
   uploadId: string,
   presetId: string,
+  aiTuning?: AiTuning,
 ): Promise<ProcessingJobCreated> {
   return apiRequest<ProcessingJobCreated>('/processing', {
     method: 'POST',
-    body: { uploadId, presetId },
+    body: { uploadId, presetId, aiTuning },
   });
 }
 

@@ -8,6 +8,7 @@ export interface PresetSummary {
   name: string;
   slug: string;
   resolution: string;
+  description: string | null;
 }
 
 @Injectable()
@@ -22,6 +23,7 @@ export class PresetsService {
       name: preset.name,
       slug: preset.slug,
       resolution: preset.targetResolution,
+      description: preset.description,
     }));
   }
 }

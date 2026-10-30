@@ -5,13 +5,21 @@ import {
   fetchProcessingResult,
   fetchProcessingStatus,
 } from '@/services/processing-service';
+import type { AiTuning } from '@/types/processing';
 
 const STATUS_POLL_INTERVAL_MS = 1_000;
 
 export function useCreateProcessing() {
   return useMutation({
-    mutationFn: ({ uploadId, presetId }: { uploadId: string; presetId: string }) =>
-      createProcessingJob(uploadId, presetId),
+    mutationFn: ({
+      uploadId,
+      presetId,
+      aiTuning,
+    }: {
+      uploadId: string;
+      presetId: string;
+      aiTuning?: AiTuning;
+    }) => createProcessingJob(uploadId, presetId, aiTuning),
   });
 }
 

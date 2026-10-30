@@ -22,4 +22,8 @@ export class AiRepository {
   findAllPresets(): Promise<PlatformPreset[]> {
     return this.prisma.platformPreset.findMany();
   }
+
+  findPresetById(presetId: string): Promise<PlatformPreset | null> {
+    return this.prisma.platformPreset.findUnique({ where: { id: presetId } });
+  }
 }

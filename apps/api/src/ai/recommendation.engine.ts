@@ -77,6 +77,15 @@ function clampScore(value: number): number {
   return Math.min(100, Math.max(0, value));
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+/** Paksa genap agar valid untuk filter scale/pad FFmpeg (force_divisible_by=2). */
+function evenize(value: number): number {
+  return value % 2 === 0 ? value : value - 1;
+}
+
 function parseTargetResolution(resolution: string): { width: number; height: number } {
   const match = /^(\d+)x(\d+)$/.exec(resolution);
   if (!match) {
@@ -242,4 +251,81 @@ export function rankPresets(video: VideoAnalysis, presets: PresetCandidate[]): P
   return presets
     .map((preset) => scorePreset(video, preset))
     .sort((a, b) => b.score - a.score || a.slug.localeCompare(b.slug));
+}
+
+/** Preset + kolom yang dibutuhkan AI Fine-Tune untuk punya baseline CRF. */
+export interface TuningCandidate extends PresetCandidate {
+  crf: number | null;
+  bitrateStrategy: 'CBR' | 'CRF';
+}
+
+export interface TuningSuggestion {
+  suggestedCrf?: number;
+  suggestedBitrate?: number;
+  suggestedFps?: number;
+  suggestedScale?: string;
+  reasons: string[];
+}
+
+/** CRF default bila Platform Profile memakai CBR (tidak punya baseline CRF sendiri). */
+const CRF_BASELINE = 23;
+const CRF_MIN = 18;
+const CRF_MAX = 28;
+const CRF_ADJUST_STEP = 2;
+/** Rasio bitrate sumber vs target yang dianggap "banyak headroom detail". */
+const BITRATE_SURPLUS_RATIO = 1.5;
+/** Rasio bitrate sumber vs target yang dianggap "sumber sudah terkompresi berat". */
+const BITRATE_DEFICIT_RATIO = 0.5;
+
+/**
+ * Menyarankan penyesuaian kecil (CRF, bitrate, fps, scale) di atas Platform
+ * Profile yang SUDAH DIPILIH user — tidak pernah mengganti preset itu sendiri.
+ * Deterministik, dihitung dari delta yang sama dengan faktor scoreBitrate/
+ * scoreFps/scoreResolution di atas, hanya diterjemahkan jadi nilai konkret
+ * alih-alih skor.
+ */
+export function suggestTuning(video: VideoAnalysis, preset: TuningCandidate): TuningSuggestion {
+  const target = parseTargetResolution(preset.targetResolution);
+  const reasons: string[] = [];
+  const suggestion: TuningSuggestion = { reasons };
+
+  if (video.fps > 0 && video.fps < preset.targetFps) {
+    suggestion.suggestedFps = video.fps;
+    reasons.push(`Fps sumber (${video.fps}) lebih rendah dari target, disesuaikan agar tidak boros`);
+  }
+
+  if (video.width > 0 && video.height > 0 && target.width > 0 && target.height > 0) {
+    const sourcePixels = video.width * video.height;
+    const targetPixels = target.width * target.height;
+
+    if (sourcePixels < targetPixels) {
+      const scaleRatio = Math.sqrt(sourcePixels / targetPixels);
+      const width = evenize(Math.round(target.width * scaleRatio));
+      const height = evenize(Math.round(target.height * scaleRatio));
+      suggestion.suggestedScale = `${width}x${height}`;
+      reasons.push('Resolusi sumber lebih kecil dari target, scale diturunkan agar tidak upscale');
+    }
+  }
+
+  if (video.bitrate > 0) {
+    if (video.bitrate < preset.targetBitrate) {
+      suggestion.suggestedBitrate = video.bitrate;
+      reasons.push(
+        `Bitrate sumber (${video.bitrate} kbps) di bawah target, diturunkan agar tidak boros ukuran file`,
+      );
+    }
+
+    const baselineCrf = preset.crf ?? CRF_BASELINE;
+    if (video.bitrate >= preset.targetBitrate * BITRATE_SURPLUS_RATIO) {
+      suggestion.suggestedCrf = clamp(baselineCrf - CRF_ADJUST_STEP, CRF_MIN, CRF_MAX);
+      reasons.push('Video sumber punya detail berlebih, CRF diturunkan untuk kualitas lebih tinggi');
+    } else if (video.bitrate < preset.targetBitrate * BITRATE_DEFICIT_RATIO) {
+      suggestion.suggestedCrf = clamp(baselineCrf + CRF_ADJUST_STEP, CRF_MIN, CRF_MAX);
+      reasons.push(
+        'Video sumber sudah cukup terkompresi, CRF dinaikkan tanpa kehilangan kualitas terlihat',
+      );
+    }
+  }
+
+  return suggestion;
 }

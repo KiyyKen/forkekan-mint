@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { JobStatus, PlatformPreset, ProcessingJob, ProcessingResult } from '@prisma/client';
+import { JobStatus, Prisma, PlatformPreset, ProcessingJob, ProcessingResult } from '@prisma/client';
 
 import { PrismaService } from '../database/prisma.service';
 import { VIDEO_PROCESSING_QUEUE } from '../common/queue/queue.constants';
@@ -40,7 +40,11 @@ export class ProcessingRepository {
     });
   }
 
-  createJob(mediaFileId: string, presetId: string): Promise<ProcessingJob> {
+  createJob(
+    mediaFileId: string,
+    presetId: string,
+    aiTuning?: Prisma.InputJsonValue,
+  ): Promise<ProcessingJob> {
     return this.prisma.processingJob.create({
       data: {
         mediaFileId,
@@ -48,6 +52,7 @@ export class ProcessingRepository {
         queueName: VIDEO_PROCESSING_QUEUE,
         status: JobStatus.WAITING,
         progress: 0,
+        aiTuning: aiTuning ?? Prisma.JsonNull,
       },
     });
   }

@@ -253,6 +253,11 @@ Representasi file pada Cloudflare R2.
 ## PlatformPreset
 
 ```prisma
+enum BitrateStrategy {
+  CBR
+  CRF
+}
+
 model PlatformPreset {
   id                   String      @id @default(cuid())
 
@@ -274,6 +279,24 @@ model PlatformPreset {
 
   targetAudioBitrate   Int
 
+  crf                  Int?
+
+  bitrateStrategy      BitrateStrategy @default(CBR)
+
+  pixelFormat          String      @default("yuv420p")
+
+  container            String      @default("mp4")
+
+  videoPreset          String      @default("veryfast")
+
+  optimizationFlags    String[]    @default(["-movflags", "+faststart"])
+
+  audioChannels        Int         @default(2)
+
+  audioSampleRate      Int         @default(44100)
+
+  scalingMode          String      @default("pad")
+
   processingJobs       ProcessingJob[]
 
   favorites            FavoritePreset[]
@@ -283,7 +306,21 @@ model PlatformPreset {
 }
 ```
 
-Preset optimasi.
+Platform Profile — mendefinisikan seluruh parameter FFmpeg untuk satu
+platform (codec, CRF/bitrate strategy, scaling, fps, audio, pixel format,
+container, optimization flags). AI Fine-Tune hanya boleh mengoverride
+crf/bitrate/fps/scale per job lewat `ProcessingJob.aiTuning`, tidak pernah
+mengubah profil ini sendiri.
+
+`bitrateStrategy = CRF` dipakai saat kualitas visual lebih penting daripada
+ukuran file tetap (WhatsApp Story — WhatsApp mengompres ulang setiap Story,
+jadi CRF memberi "bahan" lebih baik untuk kompresi ulang itu dibanding CBR
+tetap). `scalingMode` menentukan strategi resize: `pad` (letterbox, jaga
+seluruh frame) atau `crop` (isi penuh, potong kelebihan).
+
+Platform utama produk: WhatsApp Story (default). Platform lain (Instagram
+Story, TikTok, Telegram, Discord, YouTube Shorts, dan preset lain) tetap
+didukung penuh sebagai pilihan sekunder.
 
 Contoh
 
@@ -320,6 +357,8 @@ model ProcessingJob {
 
   failedReason    String?
 
+  aiTuning        Json?
+
   result          ProcessingResult?
 
   logs            ProcessingLog[]
@@ -330,6 +369,10 @@ model ProcessingJob {
   @@index([status, createdAt])
 }
 ```
+
+`aiTuning` — override opsional dari AI Fine-Tune di atas Platform Profile
+(`{ crf?, bitrate?, fps?, scale? }`). Null berarti job memakai profil apa
+adanya, tanpa penyesuaian AI.
 
 Queue encoding.
 

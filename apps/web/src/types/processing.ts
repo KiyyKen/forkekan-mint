@@ -1,3 +1,14 @@
+/**
+ * Override opsional dari AI Fine-Tune di atas Platform Profile yang dipilih
+ * user — hanya 4 parameter ini yang boleh disentuh AI.
+ */
+export interface AiTuning {
+  crf?: number;
+  bitrate?: number;
+  fps?: number;
+  scale?: string;
+}
+
 /** Response endpoint processing — docs/07-api-specification.md. */
 export interface ProcessingJobCreated {
   jobId: string;

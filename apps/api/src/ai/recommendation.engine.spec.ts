@@ -2,6 +2,8 @@ import {
   PresetCandidate,
   rankPresets,
   scorePreset,
+  suggestTuning,
+  TuningCandidate,
   VideoAnalysis,
 } from './recommendation.engine';
 
@@ -13,6 +15,17 @@ function preset(overrides: Partial<PresetCandidate> & { id: string; slug: string
     targetFps: 30,
     targetBitrate: 4000,
     targetAudioBitrate: 128,
+    ...overrides,
+  };
+}
+
+function tuningPreset(
+  overrides: Partial<TuningCandidate> & { id: string; slug: string },
+): TuningCandidate {
+  return {
+    ...preset(overrides),
+    crf: null,
+    bitrateStrategy: 'CBR',
     ...overrides,
   };
 }
@@ -165,5 +178,82 @@ describe('recommendation engine', () => {
     const ranked = rankPresets(video({}), [twinB, twin]);
 
     expect(ranked[0].slug).toBe('aaa-twin');
+  });
+});
+
+describe('suggestTuning', () => {
+  const whatsappStoryProfile = tuningPreset({
+    id: 'p-wa',
+    slug: 'whatsapp-story',
+    name: 'WhatsApp Story',
+    targetResolution: '720x1280',
+    targetFps: 30,
+    targetBitrate: 2000,
+    crf: 23,
+    bitrateStrategy: 'CRF',
+  });
+
+  it('tidak menyarankan apa pun bila video sudah sama/lebih baik dari target', () => {
+    const suggestion = suggestTuning(
+      video({ width: 720, height: 1280, fps: 30, bitrate: 2000 }),
+      whatsappStoryProfile,
+    );
+
+    expect(suggestion.suggestedFps).toBeUndefined();
+    expect(suggestion.suggestedScale).toBeUndefined();
+    expect(suggestion.suggestedBitrate).toBeUndefined();
+  });
+
+  it('menyarankan fps sumber saat lebih rendah dari target', () => {
+    const suggestion = suggestTuning(video({ fps: 24 }), whatsappStoryProfile);
+
+    expect(suggestion.suggestedFps).toBe(24);
+    expect(suggestion.reasons.join(' ')).toContain('Fps sumber');
+  });
+
+  it('menyarankan scale lebih kecil saat resolusi sumber di bawah target', () => {
+    const suggestion = suggestTuning(video({ width: 360, height: 640 }), whatsappStoryProfile);
+
+    expect(suggestion.suggestedScale).toBe('360x640');
+    expect(suggestion.reasons.join(' ')).toContain('tidak upscale');
+  });
+
+  it('menyarankan bitrate sumber saat lebih rendah dari target', () => {
+    const suggestion = suggestTuning(video({ bitrate: 1200 }), whatsappStoryProfile);
+
+    expect(suggestion.suggestedBitrate).toBe(1200);
+  });
+
+  it('menurunkan CRF saat sumber punya banyak headroom bitrate', () => {
+    const suggestion = suggestTuning(video({ bitrate: 6000 }), whatsappStoryProfile);
+
+    expect(suggestion.suggestedCrf).toBe(21);
+  });
+
+  it('menaikkan CRF saat sumber sudah terkompresi berat', () => {
+    const suggestion = suggestTuning(video({ bitrate: 800 }), whatsappStoryProfile);
+
+    expect(suggestion.suggestedCrf).toBe(25);
+  });
+
+  it('memakai CRF baseline 23 saat profil tidak punya crf sendiri (CBR)', () => {
+    const cbrProfile = tuningPreset({
+      id: 'p-telegram',
+      slug: 'telegram',
+      name: 'Telegram',
+      targetResolution: '1280x720',
+      targetBitrate: 2500,
+    });
+
+    const suggestion = suggestTuning(video({ bitrate: 10_000 }), cbrProfile);
+
+    expect(suggestion.suggestedCrf).toBe(21);
+  });
+
+  it('tidak pernah mengubah presetId — hanya menyarankan parameter encode', () => {
+    const suggestion = suggestTuning(video({ fps: 15, bitrate: 500 }), whatsappStoryProfile);
+
+    expect(suggestion).not.toHaveProperty('presetId');
+    expect(suggestion).not.toHaveProperty('recommendedPreset');
   });
 });

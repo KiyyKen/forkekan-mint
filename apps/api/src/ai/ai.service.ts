@@ -2,10 +2,10 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { MediaFile } from '@prisma/client';
 
 import { AiRepository } from './ai.repository';
-import { rankPresets, VideoAnalysis } from './recommendation.engine';
+import { rankPresets, suggestTuning, VideoAnalysis } from './recommendation.engine';
 
 /**
- * Response POST /ai/recommendation — docs/07-api-specification.md.
+ * Response POST /ai/recommendation tanpa presetId — docs/07-api-specification.md.
  * `alternatives` adalah tambahan aditif (kontrak inti tidak berubah).
  */
 export interface RecommendationResult {
@@ -22,6 +22,20 @@ export interface RecommendationResult {
   }[];
 }
 
+/**
+ * Response POST /ai/recommendation DENGAN presetId — mode AI Fine-Tune.
+ * Hanya menyarankan penyesuaian kecil di atas platform yang sudah dipilih,
+ * tidak pernah mengganti preset itu sendiri.
+ */
+export interface TuningSuggestionResult {
+  presetId: string;
+  suggestedCrf?: number;
+  suggestedBitrate?: number;
+  suggestedFps?: number;
+  suggestedScale?: string;
+  reason: string;
+}
+
 const ALTERNATIVES_COUNT = 2;
 const REASON_SENTENCES = 2;
 
@@ -31,8 +45,12 @@ export class AiService {
 
   /**
    * Rekomendasi preset berdasarkan metadata video (deterministik, tanpa LLM).
+   * Bila `presetId` disertakan, beralih ke mode AI Fine-Tune untuk preset itu.
    */
-  async recommend(uploadId: string): Promise<RecommendationResult> {
+  async recommend(
+    uploadId: string,
+    presetId?: string,
+  ): Promise<RecommendationResult | TuningSuggestionResult> {
     const upload = await this.aiRepository.findUploadWithMedia(uploadId);
     if (!upload) {
       throw new NotFoundException('Upload tidak ditemukan');
@@ -44,11 +62,6 @@ export class AiService {
       throw new BadRequestException('Metadata video belum tersedia, coba lagi sebentar');
     }
 
-    const presets = await this.aiRepository.findAllPresets();
-    if (presets.length === 0) {
-      throw new NotFoundException('Belum ada preset yang tersedia');
-    }
-
     const analysis: VideoAnalysis = {
       width: upload.mediaFile.width,
       height: upload.mediaFile.height,
@@ -58,6 +71,15 @@ export class AiService {
       codec: upload.mediaFile.codec,
       fileSize: Number(upload.mediaFile.fileSize),
     };
+
+    if (presetId) {
+      return this.recommendTuning(analysis, presetId);
+    }
+
+    const presets = await this.aiRepository.findAllPresets();
+    if (presets.length === 0) {
+      throw new NotFoundException('Belum ada preset yang tersedia');
+    }
 
     const ranked = rankPresets(analysis, presets);
     const [best, ...rest] = ranked;
@@ -74,6 +96,27 @@ export class AiService {
         name: candidate.name,
         compatibilityScore: candidate.score,
       })),
+    };
+  }
+
+  private async recommendTuning(
+    analysis: VideoAnalysis,
+    presetId: string,
+  ): Promise<TuningSuggestionResult> {
+    const preset = await this.aiRepository.findPresetById(presetId);
+    if (!preset) {
+      throw new NotFoundException('Preset tidak ditemukan');
+    }
+
+    const suggestion = suggestTuning(analysis, preset);
+
+    return {
+      presetId: preset.id,
+      suggestedCrf: suggestion.suggestedCrf,
+      suggestedBitrate: suggestion.suggestedBitrate,
+      suggestedFps: suggestion.suggestedFps,
+      suggestedScale: suggestion.suggestedScale,
+      reason: this.buildReason(suggestion.reasons, preset.name),
     };
   }
 
